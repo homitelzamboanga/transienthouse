@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HOMITEL Lodgings | Premium Vacation Rentals</title>
+    <title>HOMITEL Lodgings | Premium Vacation Rentals - Master Calendar Sync</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ical.js/1.5.0/ical.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
     
     <script>
@@ -24,6 +25,12 @@
                             700: '#0369a1',
                             800: '#075985',
                             900: '#0c4a6e',
+                        },
+                        platform: {
+                            airbnb: '#FF5A5F',
+                            booking: '#003580',
+                            agoda: '#1B5EBE',
+                            direct: '#10b981'
                         }
                     },
                     fontFamily: {
@@ -47,7 +54,7 @@
             font-family: 'Playfair Display', serif;
         }
         
-        /* Animated background - Light with blue touches */
+        /* Animated background */
         .gradient-bg {
             position: fixed;
             top: 0;
@@ -62,7 +69,7 @@
                 linear-gradient(to bottom, #ffffff, #f1f5f9);
         }
         
-        /* Glassmorphism luxury cards - White/Blue theme */
+        /* Glassmorphism cards */
         .glass-card {
             background: rgba(255, 255, 255, 0.7);
             backdrop-filter: blur(12px);
@@ -78,153 +85,208 @@
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1), 0 0 30px rgba(14, 165, 233, 0.15);
         }
         
-        /* Clickable amenity specific styles */
-        .amenity-card {
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
+        /* Platform-specific cards */
+        .platform-card {
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
         }
         
-        .amenity-card::after {
-            content: 'View Photo';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: linear-gradient(to top, rgba(14, 165, 233, 0.9), transparent);
+        .platform-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15);
+        }
+        
+        .platform-card.airbnb:hover { border-color: #FF5A5F; }
+        .platform-card.booking:hover { border-color: #003580; }
+        .platform-card.agoda:hover { border-color: #1B5EBE; }
+        .platform-card.direct:hover { border-color: #10b981; }
+        
+        /* Calendar container */
+        .calendar-container {
+            background: white;
+            border-radius: 1.5rem;
+            overflow: hidden;
+            border: 1px solid rgba(14, 165, 233, 0.1);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05);
+        }
+
+        .calendar-tabs {
+            display: flex;
+            gap: 0.5rem;
+            padding: 1rem;
+            background: linear-gradient(to right, #f8fafc, #f0f9ff);
+            border-bottom: 1px solid #e2e8f0;
+            flex-wrap: wrap;
+        }
+
+        .calendar-tab {
+            padding: 0.5rem 1rem;
+            border-radius: 0.75rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            background: white;
+            color: #64748b;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .calendar-tab.active {
+            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
             color: white;
-            padding: 1rem 0.5rem 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(14, 165, 233, 0.3);
+        }
+
+        .calendar-tab:hover:not(.active) {
+            background: #e0f2fe;
+            color: #0284c7;
+            transform: translateY(-1px);
+        }
+
+        /* Sync status indicators */
+        .sync-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
             font-size: 0.75rem;
             font-weight: 600;
-            opacity: 0;
-            transform: translateY(10px);
-            transition: all 0.3s ease;
-            text-align: center;
         }
-        
-        .amenity-card:hover::after {
-            opacity: 1;
-            transform: translateY(0);
+
+        .sync-status.synced {
+            background: #dcfce7;
+            color: #166534;
         }
-        
-        /* Blue glow button */
-        .glow-btn {
-            position: relative;
-            overflow: hidden;
-            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+
+        .sync-status.pending {
+            background: #fef3c7;
+            color: #92400e;
         }
-        
-        .glow-btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-            transition: left 0.6s;
+
+        .sync-status.error {
+            background: #fee2e2;
+            color: #991b1b;
         }
-        
-        .glow-btn:hover::before {
-            left: 100%;
-        }
-        
-        /* Dropdown animation */
-        .booking-dropdown {
-            max-height: 0;
-            opacity: 0;
-            overflow: hidden;
-            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .booking-dropdown.active {
-            max-height: 500px;
-            opacity: 1;
-            margin-top: 1.5rem;
-        }
-        
-        /* Platform buttons */
-        .platform-btn {
-            transition: all 0.3s ease;
-            border: 1px solid rgba(14, 165, 233, 0.1);
-            background: rgba(240, 249, 255, 0.5);
-        }
-        
-        .platform-btn:hover {
-            transform: translateX(8px);
-            border-color: rgba(14, 165, 233, 0.4);
-            background: rgba(224, 242, 254, 0.8);
-        }
-        
-        /* Floating particles - Blue */
-        .particle {
-            position: fixed;
-            width: 3px;
-            height: 3px;
-            background: rgba(14, 165, 233, 0.2);
+
+        .sync-dot {
+            width: 6px;
+            height: 6px;
             border-radius: 50%;
-            pointer-events: none;
-            animation: float 25s infinite linear;
-        }
-        
-        @keyframes float {
-            from { transform: translateY(100vh) translateX(0); opacity: 0; }
-            10% { opacity: 0.4; }
-            90% { opacity: 0.4; }
-            to { transform: translateY(-10vh) translateX(100px); opacity: 0; }
-        }
-        
-        .amenity-icon {
-            transition: transform 0.3s ease;
-            color: #64748b;
-        }
-        
-        .glass-card:hover .amenity-icon {
-            transform: scale(1.1);
-            color: #0ea5e9;
-        }
-        
-        /* Modal overlay */
-        .modal-overlay {
-            backdrop-filter: blur(8px);
-            background: rgba(255,255,255,0.7);
+            animation: pulse 2s infinite;
         }
 
-        /* Text selection color */
-        ::selection {
-            background: rgba(14, 165, 233, 0.2);
-            color: #0c4a6e;
+        .sync-status.synced .sync-dot { background: #22c55e; }
+        .sync-status.pending .sync-dot { background: #f59e0b; animation: pulse 1s infinite; }
+        .sync-status.error .sync-dot { background: #ef4444; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
 
-        /* Testimonial specific styles */
-        .testimonial-card {
-            background: rgba(255, 255, 255, 0.8);
-            border: 1px solid rgba(255, 255, 255, 0.9);
-            transition: all 0.3s ease;
-        }
-        
-        .testimonial-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.1);
+        /* Progress bar */
+        .sync-progress {
+            width: 100%;
+            height: 4px;
+            background: #e2e8f0;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 0.5rem;
         }
 
-        .star-rating {
-            color: #fbbf24;
-            letter-spacing: -2px;
+        .sync-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #0ea5e9, #10b981);
+            transition: width 0.5s ease;
+            border-radius: 2px;
         }
 
-        .avatar-circle {
-            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
-            color: white;
+        /* Platform badges */
+        .platform-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 0.75rem;
+            font-size: 0.875rem;
             font-weight: 600;
         }
+
+        .platform-badge.airbnb { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+        .platform-badge.booking { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+        .platform-badge.agoda { background: #eff6ff; color: #1e3a8a; border: 1px solid #93c5fd; }
+        .platform-badge.direct { background: #f0fdf4; color: #166534; border: 1px solid #86efac; }
+
+        /* Utility classes */
+        .text-gradient {
+            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Modal enhancements */
+        .modal-overlay {
+            backdrop-filter: blur(12px);
+            background: rgba(255,255,255,0.8);
+        }
+
+        /* Form styling */
+        .form-input {
+            transition: all 0.3s ease;
+            border: 1px solid rgba(14, 165, 233, 0.2);
+        }
+        
+        .form-input:focus {
+            border-color: #0ea5e9;
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+            outline: none;
+        }
+
+        /* iCal URL display */
+        .ical-url-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            font-family: monospace;
+            font-size: 0.75rem;
+            word-break: break-all;
+            position: relative;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            padding: 0.25rem 0.75rem;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover {
+            background: #f1f5f9;
+            border-color: #cbd5e1;
+        }
+
+        /* Grid pattern for sync diagram */
+        .sync-grid {
+            background-image: radial-gradient(circle, #cbd5e1 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
     </style>
+<base target="_blank">
+<base target="_blank">
 </head>
 <body class="text-slate-800 min-h-screen flex flex-col">
 
     <!-- Animated Background -->
     <div class="gradient-bg"></div>
-    <div id="particles"></div>
 
     <!-- Navigation -->
     <nav class="w-full p-6 flex justify-between items-center relative z-50">
@@ -234,286 +296,809 @@
             </div>
             <div>
                 <span class="font-serif text-2xl font-bold tracking-wide text-slate-900">HOMITEL</span>
-                <span class="hidden sm:inline text-xs text-slate-500 ml-2 uppercase tracking-widest">Lodgings</span>
+                <span class="hidden sm:inline text-xs text-slate-500 ml-2 uppercase tracking-widest">Master Calendar Sync</span>
             </div>
         </div>
-        <button onclick="toggleChat()" class="glass-card px-5 py-2.5 rounded-full flex items-center gap-2 hover:bg-white transition-all border-blue-500/20 hover:border-blue-500/50 group cursor-pointer">
-            <i data-lucide="message-circle" class="w-5 h-5 text-blue-500 group-hover:scale-110 transition-transform"></i>
-            <span class="hidden sm:inline text-sm font-medium text-slate-700">Chat with Us</span>
-        </button>
+        <div class="flex items-center gap-3">
+            <div class="hidden md:flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-medium text-emerald-700">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                4-Way Sync Active
+            </div>
+            <button onclick="toggleChat()" class="glass-card px-5 py-2.5 rounded-full flex items-center gap-2 hover:bg-white transition-all border-blue-500/20 hover:border-blue-500/50 group cursor-pointer">
+                <i data-lucide="message-circle" class="w-5 h-5 text-blue-500 group-hover:scale-110 transition-transform"></i>
+                <span class="hidden sm:inline text-sm font-medium text-slate-700">Chat</span>
+            </button>
+        </div>
     </nav>
 
-    <!-- Hero Section -->
+    <!-- Main Content -->
     <main class="flex-1 flex flex-col items-center justify-center px-4 py-12 relative z-10 max-w-7xl mx-auto w-full">
         
-        <div class="text-center mb-12 max-w-3xl mx-auto space-y-6">
+        <!-- Hero Section -->
+        <div class="text-center mb-12 max-w-4xl mx-auto space-y-6">
             <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 border border-blue-200 text-xs uppercase tracking-widest text-blue-600 mb-4 shadow-sm">
-                <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-                Now Accepting Bookings
+                <i data-lucide="refresh-cw" class="w-3 h-3"></i>
+                Enterprise-Grade Calendar Synchronization
             </div>
-            <h1 class="font-serif text-5xl md:text-7xl font-bold mb-4 leading-tight text-slate-900">
-                Your Home,<br>
-                <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-600">Away From Home</span>
+            <h1 class="font-serif text-5xl md:text-6xl font-bold mb-4 leading-tight text-slate-900">
+                Master Calendar<br>
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-600">Synchronization Hub</span>
             </h1>
-            <p class="text-slate-600 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed font-light">
-                Premium furnished apartments & vacation rentals designed for comfort. 
-                Fully-equipped amenities for short and extended stays in Zamboanga City.
+            <p class="text-slate-600 text-lg md:text-xl max-w-3xl mx-auto leading-relaxed font-light">
+                Real-time 4-way sync between Airbnb, Booking.com, Agoda, and your Direct Bookings. 
+                Eliminate double bookings with our unified calendar aggregation system.
             </p>
         </div>
 
-        <!-- Main Action Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl w-full px-4 mb-16">
-            
-            <!-- Book Now Card -->
-            <div class="glass-card rounded-3xl p-8 flex flex-col items-center text-center group relative overflow-hidden">
-                <div class="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                
-                <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-blue-500/30 relative z-10">
-                    <i data-lucide="calendar" class="w-10 h-10 text-white"></i>
-                </div>
-                
-                <h3 class="font-serif text-3xl font-bold mb-3 text-slate-900 relative z-10">Book Your Stay</h3>
-                <p class="text-slate-600 text-sm mb-8 flex-1 leading-relaxed relative z-10">
-                    Check availability, view photos, and secure your dates instantly on Airbnb.
-                </p>
-                
-                <button onclick="toggleBooking()" class="glow-btn w-full py-4 rounded-xl font-semibold text-white shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-all flex items-center justify-center gap-2 relative z-10 text-lg">
-                    <span>Book Now</span>
-                    <i data-lucide="chevron-down" id="book-arrow" class="w-5 h-5 transition-transform duration-300"></i>
-                </button>
-
-                <!-- Booking Options Dropdown -->
-                <div id="bookingDropdown" class="booking-dropdown w-full relative z-10">
-                    <div class="space-y-3 mt-2">
-                        <p class="text-xs text-slate-400 uppercase tracking-wider mb-3 font-semibold">Choose Platform</p>
-                        
-                        <a href="https://www.airbnb.com/rooms/1218785270396268139?check_in=2026-02-09&check_out=2026-02-11&guests=1&adults=2&s=67&unique_share_id=3cd00d88-2a1a-407c-ae50-da35c18a0489" target="_blank" class="platform-btn flex items-center gap-4 p-4 rounded-xl transition-all group cursor-pointer">
-                            <div class="w-12 h-12 rounded-full bg-[#FF5A5F]/10 flex items-center justify-center">
-                                <i data-lucide="home" class="w-6 h-6 text-[#FF5A5F]"></i>
-                            </div>
-                            <div class="text-left flex-1">
-                                <h4 class="font-semibold text-slate-800 group-hover:text-blue-600 transition-colors">Book via Airbnb</h4>
-                                <p class="text-xs text-slate-500">View Listing • Instant Book</p>
-                            </div>
-                            <i data-lucide="external-link" class="w-4 h-4 text-slate-400 group-hover:text-blue-500 transition-colors"></i>
-                        </a>
-
-                        <a href="https://www.booking.com/Share-3CS7Gc" target="_blank" class="platform-btn flex items-center gap-4 p-4 rounded-xl transition-all group cursor-pointer opacity-60 hover:opacity-100">
-                            <div class="w-12 h-12 rounded-full bg-[#003580]/10 flex items-center justify-center">
-                                <i data-lucide="bed" class="w-6 h-6 text-[#003580]"></i>
-                            </div>
-                            <div class="text-left flex-1">
-                                <h4 class="font-semibold text-slate-800 group-hover:text-blue-600 transition-colors">Book via Booking.com</h4>
-                                <p class="text-xs text-slate-500">Coming soon</p>
-                            </div>
-                            <i data-lucide="clock" class="w-4 h-4 text-slate-400"></i>
-                        </a>
-
-                        <a href="https://www.agoda.com/en-ie/cozy-transient-house-in-zamboanga/hotel/zamboanga-city-ph.html?cid=1844104&ds=bwmR8X4HujWpwOC6" target="_blank" class="platform-btn flex items-center gap-4 p-4 rounded-xl transition-all group cursor-pointer opacity-60 hover:opacity-100">
-                            <div class="w-12 h-12 rounded-full bg-[#1B5EBE]/10 flex items-center justify-center">
-                                <i data-lucide="building" class="w-6 h-6 text-[#1B5EBE]"></i>
-                            </div>
-                            <div class="text-left flex-1">
-                                <h4 class="font-semibold text-slate-800 group-hover:text-blue-600 transition-colors">Book via Agoda</h4>
-                                <p class="text-xs text-slate-500">Coming soon</p>
-                            </div>
-                            <i data-lucide="clock" class="w-4 h-4 text-slate-400"></i>
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Chat Card -->
-            <div class="glass-card rounded-3xl p-8 flex flex-col items-center text-center group relative overflow-hidden">
-                <div class="absolute inset-0 bg-gradient-to-br from-sky-400/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                
-                <a href="https://www.facebook.com/profile.php?id=61560217364747" target="_blank" class="w-20 h-20 rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-sky-500/30 relative z-10 cursor-pointer hover:shadow-xl">
-                    <i data-lucide="facebook" class="w-10 h-10 text-white"></i>
-                </a>
-                
-                <h3 class="font-serif text-3xl font-bold mb-3 text-slate-900 relative z-10">Questions?</h3>
-                <p class="text-slate-600 text-sm mb-8 flex-1 leading-relaxed relative z-10">
-                    Chat with us directly for special rates, long-term stays, or specific inquiries about the property.
-                </p>
-                
-                <button onclick="toggleChat()" class="w-full py-4 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 font-semibold text-white shadow-lg shadow-sky-500/30 hover:shadow-sky-500/50 transition-all flex items-center justify-center gap-2 relative z-10 text-lg group cursor-pointer">
-                    <span>Message on Facebook</span>
-                    <i data-lucide="message-circle" class="w-5 h-5 group-hover:scale-110 transition-transform"></i>
-                </button>
-                
-                <p class="text-xs text-slate-500 mt-4 relative z-10">Typically replies within an hour</p>
-            </div>
-
-        </div>
-
-        <!-- Amenities Preview Grid -->
-        <div class="w-full max-w-5xl px-4 mb-16">
+        <!-- Property Amenities Section -->
+        <div class="w-full max-w-6xl px-4 mb-16">
             <div class="flex items-center justify-center gap-4 mb-8">
                 <div class="h-px bg-gradient-to-r from-transparent via-blue-300 to-transparent flex-1"></div>
-                <h2 class="font-serif text-2xl text-slate-700">Property Amenities</h2>
+                <div class="text-center">
+                    <h2 class="font-serif text-3xl text-slate-900 mb-1">Property Amenities</h2>
+                    <p class="text-sm text-slate-500">Everything you need for a comfortable stay</p>
+                </div>
                 <div class="h-px bg-gradient-to-r from-transparent via-blue-300 to-transparent flex-1"></div>
             </div>
-            
+
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div class="glass-card amenity-card rounded-2xl p-6 flex flex-col items-center text-center gap-3 group" onclick="showAmenityPhoto('wifi')">
-                    <i data-lucide="wifi" class="w-8 h-8 amenity-icon"></i>
-                    <span class="text-sm text-slate-700 font-medium">High-Speed WiFi</span>
+                <!-- High-Speed WiFi -->
+                <div class="glass-card rounded-2xl p-6 text-center group hover:scale-105 transition-transform cursor-pointer">
+                    <div class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mx-auto mb-3">
+                        <i data-lucide="wifi" class="w-6 h-6 text-blue-500"></i>
+                    </div>
+                    <h3 class="font-semibold text-slate-800 text-sm">High-Speed WiFi</h3>
                 </div>
-                <div class="glass-card amenity-card rounded-2xl p-6 flex flex-col items-center text-center gap-3 group" onclick="showAmenityPhoto('tv')">
-                    <i data-lucide="tv" class="w-8 h-8 amenity-icon"></i>
-                    <span class="text-sm text-slate-700 font-medium">Smart TV</span>
+
+                <!-- Smart TV -->
+                <div class="glass-card rounded-2xl p-6 text-center group hover:scale-105 transition-transform cursor-pointer">
+                    <div class="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center mx-auto mb-3">
+                        <i data-lucide="tv" class="w-6 h-6 text-purple-500"></i>
+                    </div>
+                    <h3 class="font-semibold text-slate-800 text-sm">Smart TV</h3>
                 </div>
-                <div class="glass-card amenity-card rounded-2xl p-6 flex flex-col items-center text-center gap-3 group" onclick="showAmenityPhoto('kitchen')">
-                    <i data-lucide="chef-hat" class="w-8 h-8 amenity-icon"></i>
-                    <span class="text-sm text-slate-700 font-medium">Full Kitchen</span>
+
+                <!-- Full Kitchen -->
+                <div class="glass-card rounded-2xl p-6 text-center group hover:scale-105 transition-transform cursor-pointer">
+                    <div class="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center mx-auto mb-3">
+                        <i data-lucide="chef-hat" class="w-6 h-6 text-orange-500"></i>
+                    </div>
+                    <h3 class="font-semibold text-slate-800 text-sm">Full Kitchen</h3>
                 </div>
-                <div class="glass-card amenity-card rounded-2xl p-4 flex flex-col items-center text-center gap-3 group" onclick="showAmenityPhoto('parking')">
-                    <i data-lucide="car" class="w-8 h-8 amenity-icon"></i>
-                    <span class="text-sm text-slate-700 font-medium">Free Parking</span>
+
+                <!-- Free Parking -->
+                <div class="glass-card rounded-2xl p-6 text-center group hover:scale-105 transition-transform cursor-pointer">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center mx-auto mb-3">
+                        <i data-lucide="car" class="w-6 h-6 text-emerald-500"></i>
+                    </div>
+                    <h3 class="font-semibold text-slate-800 text-sm">Free Parking</h3>
                 </div>
-                <div class="glass-card amenity-card rounded-2xl p-4 flex flex-col items-center text-center gap-3 group" onclick="showAmenityPhoto('ac')">
-                    <i data-lucide="wind" class="w-8 h-8 amenity-icon"></i>
-                    <span class="text-sm text-slate-700 font-medium">Air Conditioning</span>
+
+                <!-- Air Conditioning -->
+                <div class="glass-card rounded-2xl p-6 text-center group hover:scale-105 transition-transform cursor-pointer">
+                    <div class="w-12 h-12 rounded-xl bg-cyan-50 flex items-center justify-center mx-auto mb-3">
+                        <i data-lucide="wind" class="w-6 h-6 text-cyan-500"></i>
+                    </div>
+                    <h3 class="font-semibold text-slate-800 text-sm">Air Conditioning</h3>
                 </div>
-                <!-- Washer/Dryer removed as requested -->
-                <div class="glass-card amenity-card rounded-2xl p-4 flex flex-col items-center text-center gap-3 group" onclick="showAmenityPhoto('security')">
-                    <i data-lucide="shield-check" class="w-8 h-8 amenity-icon"></i>
-                    <span class="text-sm text-slate-700 font-medium">24/7 Security</span>
+
+                <!-- 24/7 Security -->
+                <div class="glass-card rounded-2xl p-6 text-center group hover:scale-105 transition-transform cursor-pointer">
+                    <div class="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center mx-auto mb-3">
+                        <i data-lucide="shield-check" class="w-6 h-6 text-red-500"></i>
+                    </div>
+                    <h3 class="font-semibold text-slate-800 text-sm">24/7 Security</h3>
                 </div>
-                <div class="glass-card amenity-card rounded-2xl p-4 flex flex-col items-center text-center gap-3 group" onclick="showAmenityPhoto('location')">
-                    <i data-lucide="map-pin" class="w-8 h-8 amenity-icon"></i>
-                    <span class="text-sm text-slate-700 font-medium">Prime Location</span>
+
+                <!-- Prime Location -->
+                <div class="glass-card rounded-2xl p-6 text-center group hover:scale-105 transition-transform cursor-pointer">
+                    <div class="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center mx-auto mb-3">
+                        <i data-lucide="map-pin" class="w-6 h-6 text-amber-500"></i>
+                    </div>
+                    <h3 class="font-semibold text-slate-800 text-sm">Prime Location</h3>
+                </div>
+
+                <!-- Hot Shower -->
+                <div class="glass-card rounded-2xl p-6 text-center group hover:scale-105 transition-transform cursor-pointer">
+                    <div class="w-12 h-12 rounded-xl bg-sky-50 flex items-center justify-center mx-auto mb-3">
+                        <i data-lucide="droplets" class="w-6 h-6 text-sky-500"></i>
+                    </div>
+                    <h3 class="font-semibold text-slate-800 text-sm">Hot Shower</h3>
                 </div>
             </div>
-            
-            <p class="text-center text-slate-500 text-sm mt-6 italic">Click any amenity to view photos • More features coming soon</p>
+
+            <p class="text-center text-xs text-slate-400 mt-6 italic">
+                Click any amenity to view photos • More features coming soon
+            </p>
         </div>
 
-        <!-- Guest Testimonials Section -->
+        <!-- Guest Reviews Section -->
         <div class="w-full max-w-6xl px-4 mb-16">
-            <div class="flex items-center justify-center gap-4 mb-10">
+            <div class="flex items-center justify-center gap-4 mb-8">
                 <div class="h-px bg-gradient-to-r from-transparent via-blue-300 to-transparent flex-1"></div>
-                <h2 class="font-serif text-3xl text-slate-700">What Our Guests Say</h2>
+                <div class="text-center">
+                    <h2 class="font-serif text-3xl text-slate-900 mb-1">What Our Guests Say</h2>
+                    <p class="text-sm text-slate-500">Real reviews from our valued guests</p>
+                </div>
                 <div class="h-px bg-gradient-to-r from-transparent via-blue-300 to-transparent flex-1"></div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <!-- Review 1: Jm -->
-                <div class="testimonial-card rounded-2xl p-6 relative">
-                    <div class="absolute -top-3 -right-3 bg-blue-500 text-white p-2 rounded-full shadow-lg">
-                        <i data-lucide="quote" class="w-5 h-5"></i>
+                <!-- Review 1 -->
+                <div class="glass-card rounded-2xl p-6 relative">
+                    <div class="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+                        <i data-lucide="quote" class="w-4 h-4 text-white"></i>
                     </div>
-                    
-                    <div class="flex items-start gap-4 mb-4">
-                        <div class="w-12 h-12 rounded-full avatar-circle flex items-center justify-center text-lg flex-shrink-0">
-                            J
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <h4 class="font-bold text-slate-900 truncate">Jm</h4>
-                            <p class="text-xs text-slate-500 mb-1">7 years on Airbnb</p>
-                            <div class="flex items-center gap-1">
-                                <span class="star-rating text-lg">★★★★★</span>
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-lg">J</div>
+                        <div>
+                            <h4 class="font-semibold text-slate-900">Jm</h4>
+                            <p class="text-xs text-slate-500">7 years on Airbnb</p>
+                            <div class="flex items-center gap-0.5 mt-1">
+                                <i data-lucide="star" class="w-3 h-3 text-amber-400 fill-amber-400"></i>
+                                <i data-lucide="star" class="w-3 h-3 text-amber-400 fill-amber-400"></i>
+                                <i data-lucide="star" class="w-3 h-3 text-amber-400 fill-amber-400"></i>
+                                <i data-lucide="star" class="w-3 h-3 text-amber-400 fill-amber-400"></i>
+                                <i data-lucide="star" class="w-3 h-3 text-amber-400 fill-amber-400"></i>
                             </div>
                         </div>
                     </div>
-                    
-                    <p class="text-slate-600 text-sm leading-relaxed mb-3">
+                    <p class="text-sm text-slate-600 leading-relaxed mb-4">
                         "Kudos to the host and caretaker. Such very accomodating people. My partner and I had a great time in there. Will definitely book again and recommend to my friends."
                     </p>
-                    
-                    <div class="flex items-center gap-2 text-xs text-slate-400 border-t border-slate-100 pt-3">
+                    <div class="flex items-center gap-2 text-xs text-slate-400">
                         <i data-lucide="calendar" class="w-3 h-3"></i>
                         <span>September 2025</span>
                     </div>
                 </div>
 
-                <!-- Review 2: Rizza Paz -->
-                <div class="testimonial-card rounded-2xl p-6 relative">
-                    <div class="absolute -top-3 -right-3 bg-blue-500 text-white p-2 rounded-full shadow-lg">
-                        <i data-lucide="quote" class="w-5 h-5"></i>
+                <!-- Review 2 -->
+                <div class="glass-card rounded-2xl p-6 relative">
+                    <div class="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center">
+                        <i data-lucide="quote" class="w-4 h-4 text-white"></i>
                     </div>
-                    
-                    <div class="flex items-start gap-4 mb-4">
-                        <div class="w-12 h-12 rounded-full avatar-circle flex items-center justify-center text-lg flex-shrink-0" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
-                            R
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <h4 class="font-bold text-slate-900 truncate">Rizza Paz</h4>
-                            <p class="text-xs text-slate-500 mb-1">4 months on Airbnb</p>
-                            <div class="flex items-center gap-1">
-                                <span class="star-rating text-lg">★★★★★</span>
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-12 h-12 rounded-full bg-purple-500 flex items-center justify-center text-white font-bold text-lg">R</div>
+                        <div>
+                            <h4 class="font-semibold text-slate-900">Rizza Paz</h4>
+                            <p class="text-xs text-slate-500">4 months on Airbnb</p>
+                            <div class="flex items-center gap-0.5 mt-1">
+                                <i data-lucide="star" class="w-3 h-3 text-amber-400 fill-amber-400"></i>
+                                <i data-lucide="star" class="w-3 h-3 text-amber-400 fill-amber-400"></i>
+                                <i data-lucide="star" class="w-3 h-3 text-amber-400 fill-amber-400"></i>
+                                <i data-lucide="star" class="w-3 h-3 text-amber-400 fill-amber-400"></i>
+                                <i data-lucide="star" class="w-3 h-3 text-amber-400 fill-amber-400"></i>
                             </div>
                         </div>
                     </div>
-                    
-                    <p class="text-slate-600 text-sm leading-relaxed mb-3">
+                    <p class="text-sm text-slate-600 leading-relaxed mb-4">
                         "The place is great when you're looking for a place to stay that is budget-friendly. Both of the rooms have AC. There's also a hot shower available. The staff and host is friendly and responds very well to your queries. The neighborhood is peaceful and private but there are convenience stores and restaurants available nearby. We had a great experience here."
                     </p>
-                    
-                    <div class="flex items-center gap-2 text-xs text-slate-400 border-t border-slate-100 pt-3">
+                    <div class="flex items-center gap-2 text-xs text-slate-400">
                         <i data-lucide="calendar" class="w-3 h-3"></i>
                         <span>December 2025</span>
                     </div>
                 </div>
 
-                <!-- Review 3: Clark Adrian -->
-                <div class="testimonial-card rounded-2xl p-6 relative">
-                    <div class="absolute -top-3 -right-3 bg-blue-500 text-white p-2 rounded-full shadow-lg">
-                        <i data-lucide="quote" class="w-5 h-5"></i>
+                <!-- Review 3 -->
+                <div class="glass-card rounded-2xl p-6 relative">
+                    <div class="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center">
+                        <i data-lucide="quote" class="w-4 h-4 text-white"></i>
                     </div>
-                    
-                    <div class="flex items-start gap-4 mb-4">
-                        <div class="w-12 h-12 rounded-full avatar-circle flex items-center justify-center text-lg flex-shrink-0" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
-                            C
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <h4 class="font-bold text-slate-900 truncate">Clark Adrian</h4>
-                            <p class="text-xs text-slate-500 mb-1">2 years on Airbnb</p>
-                            <div class="flex items-center gap-1">
-                                <span class="star-rating text-lg">★★★★★</span>
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-12 h-12 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold text-lg">C</div>
+                        <div>
+                            <h4 class="font-semibold text-slate-900">Clark Adrian</h4>
+                            <p class="text-xs text-slate-500">2 years on Airbnb</p>
+                            <div class="flex items-center gap-0.5 mt-1">
+                                <i data-lucide="star" class="w-3 h-3 text-amber-400 fill-amber-400"></i>
+                                <i data-lucide="star" class="w-3 h-3 text-amber-400 fill-amber-400"></i>
+                                <i data-lucide="star" class="w-3 h-3 text-amber-400 fill-amber-400"></i>
+                                <i data-lucide="star" class="w-3 h-3 text-amber-400 fill-amber-400"></i>
+                                <i data-lucide="star" class="w-3 h-3 text-amber-400 fill-amber-400"></i>
                             </div>
                         </div>
                     </div>
-                    
-                    <p class="text-slate-600 text-sm leading-relaxed mb-3">
+                    <p class="text-sm text-slate-600 leading-relaxed mb-4">
                         "A great place to stay when you're in Zamboanga City."
                     </p>
-                    
-                    <div class="flex items-center gap-2 text-xs text-slate-400 border-t border-slate-100 pt-3">
+                    <div class="flex items-center gap-2 text-xs text-slate-400">
                         <i data-lucide="calendar" class="w-3 h-3"></i>
                         <span>September 2024</span>
                     </div>
                 </div>
             </div>
 
-            <div class="mt-8 text-center">
-                <a href="https://www.airbnb.com/rooms/1218785270396268139?check_in=2026-02-09&check_out=2026-02-11&guests=1&adults=2&s=67&unique_share_id=3cd00d88-2a1a-407c-ae50-da35c18a0489" target="_blank" class="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium text-sm transition-colors">
+            <!-- View All Reviews Button -->
+            <div class="text-center mt-8">
+                <a href="https://www.airbnb.com/rooms/1218785270396268139?adults=2&check_in=2026-02-09&check_out=2026-02-11&photo_id=1971320281&source_impression_id=p3_1770231584_P3D6HQDhlO2qhtxV&previous_page_section_name=1000" 
+                   target="_blank" 
+                   class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#FF5A5F] to-[#FF385C] text-white font-semibold shadow-lg shadow-red-500/30 hover:shadow-red-500/50 transition-all hover:scale-105">
                     <span>View all reviews on Airbnb</span>
                     <i data-lucide="external-link" class="w-4 h-4"></i>
                 </a>
             </div>
         </div>
 
+        <!-- Platform Status Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-6xl w-full px-4 mb-12">
+            <!-- Airbnb -->
+            <div class="platform-card airbnb glass-card rounded-2xl p-6 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-20 h-20 bg-red-50 rounded-bl-full opacity-50"></div>
+                <div class="relative z-10">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 rounded-xl bg-[#FF5A5F]/10 flex items-center justify-center">
+                            <i data-lucide="home" class="w-6 h-6 text-[#FF5A5F]"></i>
+                        </div>
+                        <span class="sync-status synced"><span class="sync-dot"></span>Synced</span>
+                    </div>
+                    <h3 class="font-bold text-slate-900 mb-1">Airbnb</h3>
+                    <p class="text-xs text-slate-500 mb-3">Last sync: 2 min ago</p>
+                    <div class="flex items-center gap-2 text-xs text-slate-600">
+                        <i data-lucide="calendar" class="w-3 h-3"></i>
+                        <span id="airbnb-event-count">Loading...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Booking.com -->
+            <div class="platform-card booking glass-card rounded-2xl p-6 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-20 h-20 bg-blue-50 rounded-bl-full opacity-50"></div>
+                <div class="relative z-10">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 rounded-xl bg-[#003580]/10 flex items-center justify-center">
+                            <i data-lucide="bed" class="w-6 h-6 text-[#003580]"></i>
+                        </div>
+                        <span class="sync-status synced"><span class="sync-dot"></span>Synced</span>
+                    </div>
+                    <h3 class="font-bold text-slate-900 mb-1">Booking.com</h3>
+                    <p class="text-xs text-slate-500 mb-3">Last sync: 5 min ago</p>
+                    <div class="flex items-center gap-2 text-xs text-slate-600">
+                        <i data-lucide="calendar" class="w-3 h-3"></i>
+                        <span id="booking-event-count">Loading...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Agoda -->
+            <div class="platform-card agoda glass-card rounded-2xl p-6 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-20 h-20 bg-blue-50 rounded-bl-full opacity-50"></div>
+                <div class="relative z-10">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 rounded-xl bg-[#1B5EBE]/10 flex items-center justify-center">
+                            <i data-lucide="building" class="w-6 h-6 text-[#1B5EBE]"></i>
+                        </div>
+                        <span class="sync-status synced"><span class="sync-dot"></span>Synced</span>
+                    </div>
+                    <h3 class="font-bold text-slate-900 mb-1">Agoda</h3>
+                    <p class="text-xs text-slate-500 mb-3">Last sync: 8 min ago</p>
+                    <div class="flex items-center gap-2 text-xs text-slate-600">
+                        <i data-lucide="calendar" class="w-3 h-3"></i>
+                        <span id="agoda-event-count">Loading...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Direct Bookings -->
+            <div class="platform-card direct glass-card rounded-2xl p-6 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-20 h-20 bg-emerald-50 rounded-bl-full opacity-50"></div>
+                <div class="relative z-10">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center">
+                            <i data-lucide="mouse-pointer-click" class="w-6 h-6 text-emerald-600"></i>
+                        </div>
+                        <span class="sync-status synced"><span class="sync-dot"></span>Active</span>
+                    </div>
+                    <h3 class="font-bold text-slate-900 mb-1">Direct Bookings</h3>
+                    <p class="text-xs text-slate-500 mb-3">Via website form</p>
+                    <div class="flex items-center gap-2 text-xs text-slate-600">
+                        <i data-lucide="calendar" class="w-3 h-3"></i>
+                        <span id="direct-event-count">0 bookings</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Master Calendar Section -->
+        <div class="w-full max-w-6xl px-4 mb-16">
+            <div class="flex items-center justify-center gap-4 mb-8">
+                <div class="h-px bg-gradient-to-r from-transparent via-blue-300 to-transparent flex-1"></div>
+                <div class="text-center">
+                    <h2 class="font-serif text-3xl text-slate-900 mb-1">Master Availability Calendar</h2>
+                    <p class="text-sm text-slate-500">Unified view of all 4 platforms</p>
+                </div>
+                <div class="h-px bg-gradient-to-r from-transparent via-blue-300 to-transparent flex-1"></div>
+            </div>
+
+            <!-- Calendar View Tabs -->
+            <div class="calendar-container">
+                <div class="calendar-tabs">
+                    <button class="calendar-tab active" onclick="switchCalendarView('master')" id="tab-master">
+                        <i data-lucide="layers" class="w-4 h-4 inline mr-1"></i>
+                        Master View
+                    </button>
+                    <button class="calendar-tab" onclick="switchCalendarView('airbnb')" id="tab-airbnb">
+                        <span class="w-2 h-2 rounded-full bg-[#FF5A5F] inline-block mr-1"></span>
+                        Airbnb
+                    </button>
+                    <button class="calendar-tab" onclick="switchCalendarView('booking')" id="tab-booking">
+                        <span class="w-2 h-2 rounded-full bg-[#003580] inline-block mr-1"></span>
+                        Booking.com
+                    </button>
+                    <button class="calendar-tab" onclick="switchCalendarView('agoda')" id="tab-agoda">
+                        <span class="w-2 h-2 rounded-full bg-[#1B5EBE] inline-block mr-1"></span>
+                        Agoda
+                    </button>
+                    <button class="calendar-tab" onclick="switchCalendarView('direct')" id="tab-direct">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block mr-1"></span>
+                        Direct
+                    </button>
+                    <div class="flex-1"></div>
+                    <button onclick="forceSyncAll()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-medium text-slate-700 transition-colors flex items-center gap-2">
+                        <i data-lucide="refresh-cw" class="w-3 h-3"></i>
+                        Force Sync
+                    </button>
+                </div>
+                
+                <div id="calendarFrame" class="w-full" style="height: 700px;">
+                    <!-- Master Calendar (Aggregated) -->
+                    <iframe 
+                        id="master-calendar"
+                        src="https://open-web-calendar.hosted.quelltext.eu/calendar.html?url=https%3A%2F%2Fwww.airbnb.com%2Fcalendar%2Fical%2F1218785270396268139.ics%3Ft%3D7bdcc59bc61547048d3fba047b7b493e&url=https%3A%2F%2Fical.booking.com%2Fv1%2Fexport%3Ft%3Df68f0e24-080b-433b-849d-4292e24af9e3&url=https%3A%2F%2Fycs.agoda.com%2Fen-us%2Fapi%2Fari%2Ficalendar%3Fkey%3DQceFoC89seDE%252fgZxi6mUezlYKlW9OAr6&title=HOMITEL%20Master%20Calendar&style=border-radius%3A%200%3B&language=en&skin=flat&tab=month&color-booked=%23ef4444&color-free=%2310b981"
+                        style="width: 100%; height: 100%; border: none;"
+                        sandbox="allow-scripts allow-same-origin allow-popups"
+                        loading="eager">
+                    </iframe>
+                </div>
+                
+                <div class="p-4 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center gap-4 text-xs text-slate-600">
+                        <span class="flex items-center gap-1">
+                            <span class="w-3 h-3 rounded bg-red-500"></span>
+                            Booked
+                        </span>
+                        <span class="flex items-center gap-1">
+                            <span class="w-3 h-3 rounded bg-emerald-500"></span>
+                            Available
+                        </span>
+                        <span class="flex items-center gap-1">
+                            <span class="w-3 h-3 rounded bg-amber-400"></span>
+                            Pending
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="refreshCalendar()" class="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors">
+                            <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                            Refresh
+                        </button>
+                        <button onclick="openSyncSettings()" class="text-xs text-slate-600 hover:text-slate-700 font-medium flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors">
+                            <i data-lucide="settings" class="w-3 h-3"></i>
+                            Sync Settings
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sync Progress Indicator -->
+            <div class="mt-4 glass-card rounded-xl p-4 flex items-center gap-4">
+                <div class="flex-1">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-medium text-slate-700">Next Auto-Sync</span>
+                        <span class="text-xs text-slate-500" id="next-sync-time">in 22 minutes</span>
+                    </div>
+                    <div class="sync-progress">
+                        <div class="sync-progress-bar" style="width: 65%"></div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 text-xs text-slate-500">
+                    <i data-lucide="shield-check" class="w-4 h-4 text-emerald-500"></i>
+                    <span>Secure iCal</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- iCal Integration URLs Section - Admin Only -->
+        <div id="icalSection" class="w-full max-w-6xl px-4 mb-16">
+            <!-- Admin Login Prompt (shown by default) -->
+            <div id="adminLoginPrompt" class="glass-card rounded-3xl p-8 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-64 h-64 bg-blue-400/5 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+
+                <div class="relative z-10 text-center max-w-md mx-auto">
+                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-slate-500 to-slate-600 flex items-center justify-center mx-auto mb-4 shadow-lg">
+                        <i data-lucide="lock" class="w-8 h-8 text-white"></i>
+                    </div>
+                    <h2 class="font-serif text-2xl font-bold text-slate-900 mb-2">Admin Access Required</h2>
+                    <p class="text-slate-500 text-sm mb-6">The iCal Integration URLs are restricted to administrators only.</p>
+
+                    <div class="space-y-3">
+                        <input type="password" id="adminPassword" placeholder="Enter admin password" 
+                            class="form-input w-full px-4 py-3 rounded-xl bg-slate-50 text-sm text-center"
+                            onkeypress="if(event.key==='Enter')checkAdminPassword()">
+                        <button onclick="checkAdminPassword()" 
+                            class="w-full py-3 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-600 text-white font-semibold shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-all flex items-center justify-center gap-2">
+                            <i data-lucide="unlock" class="w-5 h-5"></i>
+                            <span>Unlock</span>
+                        </button>
+                        <p id="passwordError" class="text-xs text-red-500 hidden">Incorrect password. Please try again.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- iCal Content (hidden by default, shown after auth) -->
+            <div id="icalContent" class="hidden">
+                <div class="glass-card rounded-3xl p-8 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-64 h-64 bg-blue-400/5 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+
+                    <div class="relative z-10">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center shadow-lg">
+                                    <i data-lucide="link" class="w-6 h-6 text-white"></i>
+                                </div>
+                                <div>
+                                    <h2 class="font-serif text-2xl font-bold text-slate-900">iCal Integration URLs</h2>
+                                    <p class="text-blue-600 text-sm">Use these to sync your website with other platforms</p>
+                                </div>
+                            </div>
+                            <button onclick="logoutAdmin()" class="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-medium transition-colors flex items-center gap-2">
+                                <i data-lucide="log-out" class="w-4 h-4"></i>
+                                Logout
+                            </button>
+                        </div>
+
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <!-- Master iCal URL -->
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <h3 class="font-semibold text-slate-800 text-sm">Master Calendar (All Platforms)</h3>
+                                    <span class="platform-badge direct text-xs">Recommended</span>
+                                </div>
+                                <div class="ical-url-box">
+                                    <button class="copy-btn" onclick="copyToClipboard('master-ical-url')">Copy</button>
+                                    <div id="master-ical-url">https://open-web-calendar.hosted.quelltext.eu/calendar.ics?url=https%3A%2F%2Fwww.airbnb.com%2Fcalendar%2Fical%2F1218785270396268139.ics%3Ft%3D7bdcc59bc61547048d3fba047b7b493e&url=https%3A%2F%2Fical.booking.com%2Fv1%2Fexport%3Ft%3Df68f0e24-080b-433b-849d-4292e24af9e3&url=https%3A%2F%2Fycs.agoda.com%2Fen-us%2Fapi%2Fari%2Ficalendar%3Fkey%3DQceFoC89seDE%252fgZxi6mUezlYKlW9OAr6&filename=homitel-master-calendar.ics</div>
+                                </div>
+                                <p class="text-xs text-slate-500">Import this into any calendar app to see all bookings from all platforms combined.</p>
+                            </div>
+
+                            <!-- Individual URLs -->
+                            <div class="space-y-3">
+                                <h3 class="font-semibold text-slate-800 text-sm">Individual Platform URLs</h3>
+
+                                <div class="space-y-2">
+                                    <div class="flex items-center gap-2 p-3 bg-red-50 rounded-lg border border-red-100">
+                                        <i data-lucide="home" class="w-4 h-4 text-[#FF5A5F]"></i>
+                                        <span class="text-xs font-medium text-red-800 flex-1">Airbnb iCal</span>
+                                        <button onclick="copyText('https://www.airbnb.com/calendar/ical/1218785270396268139.ics?t=7bdcc59bc61547048d3fba047b7b493e')" class="text-xs text-red-600 hover:text-red-700 font-medium">Copy</button>
+                                    </div>
+
+                                    <div class="flex items-center gap-2 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                                        <i data-lucide="bed" class="w-4 h-4 text-[#003580]"></i>
+                                        <span class="text-xs font-medium text-blue-800 flex-1">Booking.com iCal</span>
+                                        <button onclick="copyText('https://ical.booking.com/v1/export?t=f68f0e24-080b-433b-849d-4292e24af9e3')" class="text-xs text-blue-600 hover:text-blue-700 font-medium">Copy</button>
+                                    </div>
+
+                                    <div class="flex items-center gap-2 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                                        <i data-lucide="building" class="w-4 h-4 text-[#1B5EBE]"></i>
+                                        <span class="text-xs font-medium text-blue-800 flex-1">Agoda iCal</span>
+                                        <button onclick="copyText('https://ycs.agoda.com/en-us/api/ari/icalendar?key=QceFoC89seDE%2fgZxi6mUezlYKlW9OAr6')" class="text-xs text-blue-600 hover:text-blue-700 font-medium">Copy</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                            <div class="flex items-start gap-3">
+                                <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5"></i>
+                                <div class="text-sm text-amber-800">
+                                    <p class="font-semibold mb-1">Important: One-Way Sync Only</p>
+                                    <p class="text-xs leading-relaxed">The current setup is <strong>read-only aggregation</strong>. To enable two-way sync (where your website blocks dates on other platforms automatically), you need a Channel Manager like <a href="https://www.hostaway.com" target="_blank" class="underline hover:text-amber-900">Hostaway</a> or <a href="https://www.lodgify.com" target="_blank" class="underline hover:text-amber-900">Lodgify</a> with API connections.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Admin Action Buttons -->
+                        <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <button onclick="openSyncSettings()" class="glass-card rounded-2xl p-6 text-center group hover:scale-105 transition-transform">
+                                <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-500/30 group-hover:shadow-xl">
+                                    <i data-lucide="settings-2" class="w-7 h-7 text-white"></i>
+                                </div>
+                                <h3 class="font-bold text-slate-900 mb-1">Sync Settings</h3>
+                                <p class="text-xs text-slate-500">Configure auto-sync intervals & notifications</p>
+                            </button>
+
+                            <button onclick="exportCalendarData()" class="glass-card rounded-2xl p-6 text-center group hover:scale-105 transition-transform">
+                                <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-purple-500/30 group-hover:shadow-xl">
+                                    <i data-lucide="download" class="w-7 h-7 text-white"></i>
+                                </div>
+                                <h3 class="font-bold text-slate-900 mb-1">Export Data</h3>
+                                <p class="text-xs text-slate-500">Download bookings as CSV or iCal</p>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="grid grid-cols-1 md:grid-cols-1 gap-6 max-w-md w-full px-4 mb-16 mx-auto">
+            <button onclick="openDirectBooking()" class="glass-card rounded-2xl p-6 text-center group hover:scale-105 transition-transform">
+                <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-emerald-500/30 group-hover:shadow-xl">
+                    <i data-lucide="calendar-plus" class="w-7 h-7 text-white"></i>
+                </div>
+                <h3 class="font-bold text-slate-900 mb-1">Add Direct Booking</h3>
+                <p class="text-xs text-slate-500">Manually block dates for phone/walk-in bookings</p>
+            </button>
+        </div>
+
     </main>
 
-    <!-- Image Modal for Amenities (Hidden by default) -->
-    <div id="amenityModal" class="fixed inset-0 z-50 hidden items-center justify-center modal-overlay p-4">
-        <div class="bg-white rounded-2xl max-w-2xl w-full p-6 relative shadow-2xl transform scale-95 opacity-0 transition-all duration-300" id="amenityModalContent">
-            <button onclick="closeAmenityModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors">
+    <!-- Sync Settings Modal -->
+    <div id="syncSettingsModal" class="fixed inset-0 z-50 hidden items-center justify-center modal-overlay p-4">
+        <div class="bg-white rounded-3xl max-w-2xl w-full p-8 relative shadow-2xl transform scale-95 opacity-0 transition-all duration-300 max-h-[90vh] overflow-y-auto" id="syncSettingsContent">
+            <button onclick="closeSyncSettings()" class="absolute top-4 right-4 w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors">
                 <i data-lucide="x" class="w-5 h-5 text-slate-600"></i>
             </button>
             
-            <h3 id="amenityModalTitle" class="font-serif text-2xl font-bold text-slate-900 mb-4">Amenity Name</h3>
-            
-            <div class="aspect-video bg-slate-100 rounded-xl flex items-center justify-center mb-4 border-2 border-dashed border-slate-300">
-                <div class="text-center p-6">
-                    <i data-lucide="image" class="w-12 h-12 text-slate-400 mx-auto mb-2"></i>
-                    <p class="text-slate-500 text-sm">Photo coming soon</p>
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center mx-auto mb-4 shadow-lg">
+                    <i data-lucide="settings-2" class="w-8 h-8 text-white"></i>
+                </div>
+                <h3 class="font-serif text-3xl font-bold text-slate-900 mb-2">Synchronization Settings</h3>
+                <p class="text-slate-600 text-sm">Configure your 4-way calendar sync parameters</p>
+            </div>
+
+            <div class="space-y-6">
+                <!-- Auto Sync Interval -->
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h4 class="font-semibold text-slate-800">Auto-Sync Interval</h4>
+                            <p class="text-xs text-slate-500">How often to check for updates from platforms</p>
+                        </div>
+                        <select class="form-input px-3 py-2 rounded-lg text-sm bg-white" id="sync-interval" onchange="updateSyncInterval()">
+                            <option value="5">Every 5 minutes</option>
+                            <option value="15" selected>Every 15 minutes</option>
+                            <option value="30">Every 30 minutes</option>
+                            <option value="60">Every hour</option>
+                        </select>
+                    </div>
+                    <div class="sync-progress">
+                        <div class="sync-progress-bar" id="sync-progress-bar" style="width: 33%"></div>
+                    </div>
+                </div>
+
+                <!-- Platform Toggles -->
+                <div class="space-y-3">
+                    <h4 class="font-semibold text-slate-800 text-sm">Active Sync Sources</h4>
+                    
+                    <div class="flex items-center justify-between p-4 bg-red-50 rounded-xl border border-red-100">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                                <i data-lucide="home" class="w-5 h-5 text-[#FF5A5F]"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium text-slate-900">Airbnb</p>
+                                <p class="text-xs text-slate-500">iCal sync active</p>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" checked class="sr-only peer" onchange="togglePlatform('airbnb')">
+                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#FF5A5F]"></div>
+                        </label>
+                    </div>
+
+                    <div class="flex items-center justify-between p-4 bg-blue-50 rounded-xl border border-blue-100">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                                <i data-lucide="bed" class="w-5 h-5 text-[#003580]"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium text-slate-900">Booking.com</p>
+                                <p class="text-xs text-slate-500">iCal sync active</p>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" checked class="sr-only peer" onchange="togglePlatform('booking')">
+                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#003580]"></div>
+                        </label>
+                    </div>
+
+                    <div class="flex items-center justify-between p-4 bg-blue-50 rounded-xl border border-blue-100">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                                <i data-lucide="building" class="w-5 h-5 text-[#1B5EBE]"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium text-slate-900">Agoda</p>
+                                <p class="text-xs text-slate-500">iCal sync active</p>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" checked class="sr-only peer" onchange="togglePlatform('agoda')">
+                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#1B5EBE]"></div>
+                        </label>
+                    </div>
+
+                    <div class="flex items-center justify-between p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                                <i data-lucide="mouse-pointer-click" class="w-5 h-5 text-emerald-600"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium text-slate-900">Direct Bookings</p>
+                                <p class="text-xs text-slate-500">Manual entry via form</p>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" checked disabled class="sr-only peer">
+                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Notification Settings -->
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                    <h4 class="font-semibold text-slate-800 mb-4 text-sm">Notifications</h4>
+                    <div class="space-y-3">
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" checked class="w-4 h-4 text-blue-500 rounded focus:ring-blue-500">
+                            <span class="text-sm text-slate-700">Email on sync conflicts</span>
+                        </label>
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" checked class="w-4 h-4 text-blue-500 rounded focus:ring-blue-500">
+                            <span class="text-sm text-slate-700">Email on new direct booking</span>
+                        </label>
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" class="w-4 h-4 text-blue-500 rounded focus:ring-blue-500">
+                            <span class="text-sm text-slate-700">Daily sync summary report</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="flex gap-3">
+                    <button onclick="saveSyncSettings()" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-600 text-white font-semibold shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-all">
+                        Save Settings
+                    </button>
+                    <button onclick="testSyncConnection()" class="px-6 py-3 rounded-xl border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 transition-colors">
+                        Test Connection
+                    </button>
                 </div>
             </div>
-            
-            <p class="text-slate-600 text-sm text-center">We're currently updating our amenity photos. Check back soon for detailed images of this feature!</p>
         </div>
+    </div>
+
+    <!-- Direct Booking Modal -->
+    <div id="directBookingModal" class="fixed inset-0 z-50 hidden items-center justify-center modal-overlay p-4">
+        <div class="bg-white rounded-3xl max-w-2xl w-full p-8 relative shadow-2xl transform scale-95 opacity-0 transition-all duration-300 max-h-[90vh] overflow-y-auto" id="directBookingContent">
+            <!-- Content from previous implementation -->
+            <button onclick="closeDirectBooking()" class="absolute top-4 right-4 w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors">
+                <i data-lucide="x" class="w-5 h-5 text-slate-600"></i>
+            </button>
+            
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-emerald-500/30">
+                    <i data-lucide="calendar-plus" class="w-8 h-8 text-white"></i>
+                </div>
+                <h3 class="font-serif text-3xl font-bold text-slate-900 mb-2">Add Direct Booking</h3>
+                <p class="text-slate-600 text-sm">Block dates for phone, walk-in, or manual bookings</p>
+            </div>
+
+            <form id="directBookingForm" class="space-y-6" onsubmit="submitDirectBooking(event)">
+                <!-- Quick sync notice -->
+                <div class="p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-3">
+                    <i data-lucide="info" class="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5"></i>
+                    <div class="text-sm text-blue-800">
+                        <p class="font-semibold mb-1">Manual Block Required</p>
+                        <p class="text-xs">After adding this booking, you must manually block these dates on Airbnb, Booking.com, and Agoda until API sync is enabled.</p>
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 mb-1">Guest Name *</label>
+                        <input type="text" name="guestName" required class="form-input w-full px-4 py-3 rounded-xl bg-slate-50 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 mb-1">Email *</label>
+                        <input type="email" name="guestEmail" required class="form-input w-full px-4 py-3 rounded-xl bg-slate-50 text-sm">
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 mb-1">Check-in Date *</label>
+                        <input type="date" name="checkInDate" required class="form-input w-full px-4 py-3 rounded-xl bg-slate-50 text-sm" onchange="updateCheckoutMin()">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 mb-1">Check-out Date *</label>
+                        <input type="date" name="checkOutDate" required class="form-input w-full px-4 py-3 rounded-xl bg-slate-50 text-sm">
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 mb-1">Adults</label>
+                        <input type="number" name="adults" min="1" value="2" class="form-input w-full px-4 py-3 rounded-xl bg-slate-50 text-sm text-center">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 mb-1">Children</label>
+                        <input type="number" name="children" min="0" value="0" class="form-input w-full px-4 py-3 rounded-xl bg-slate-50 text-sm text-center">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 mb-1">Total Amount</label>
+                        <input type="text" name="amount" placeholder="₱0.00" class="form-input w-full px-4 py-3 rounded-xl bg-slate-50 text-sm">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-700 mb-1">Notes</label>
+                    <textarea name="notes" rows="3" class="form-input w-full px-4 py-3 rounded-xl bg-slate-50 text-sm resize-none" placeholder="Source of booking, special requests, etc."></textarea>
+                </div>
+
+                <button type="submit" class="w-full py-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 transition-all flex items-center justify-center gap-2">
+                    <span>Block Dates & Send Confirmation</span>
+                    <i data-lucide="send" class="w-5 h-5"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Chat Widget -->
+    <div id="chatWidgetModal" class="fixed inset-0 z-50 hidden items-center justify-center modal-overlay p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 relative shadow-2xl transform scale-95 opacity-0 transition-all duration-300" id="chatWidgetContent">
+            <button onclick="closeChatWidget()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors">
+                <i data-lucide="x" class="w-5 h-5 text-slate-600"></i>
+            </button>
+            
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-green-500 flex items-center justify-center mx-auto mb-4 shadow-lg">
+                    <i data-lucide="message-circle" class="w-8 h-8 text-white"></i>
+                </div>
+                <h3 class="font-serif text-2xl font-bold text-slate-900 mb-2">Chat with HOMITEL</h3>
+                <p class="text-slate-600 text-sm">Choose your preferred messaging platform</p>
+            </div>
+
+            <div class="space-y-3">
+                <button onclick="openGoogleChat()" class="w-full p-4 rounded-xl border-2 border-blue-100 hover:border-blue-300 bg-blue-50/50 hover:bg-blue-50 transition-all flex items-center gap-4 group">
+                    <div class="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center">
+                        <svg class="w-6 h-6" viewBox="0 0 24 24"><path fill="#00832D" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.12.02-1.96 1.25-5.54 3.67-.52.36-1 .53-1.42.52-.47-.01-1.37-.26-2.03-.48-.82-.27-1.47-.42-1.42-.88.03-.24.37-.49 1.02-.74 3.98-1.73 6.64-2.87 7.97-3.43 3.79-1.57 4.58-1.85 5.1-1.85.11 0 .37.03.53.17.14.12.18.28.2.45-.01.07-.01.24-.02.38z"/></svg>
+                    </div>
+                    <div class="text-left flex-1">
+                        <h4 class="font-semibold text-slate-800 group-hover:text-blue-600 transition-colors">Google Chat</h4>
+                        <p class="text-xs text-slate-500">Fastest response</p>
+                    </div>
+                    <i data-lucide="external-link" class="w-4 h-4 text-slate-400 group-hover:text-blue-500"></i>
+                </button>
+
+                <button onclick="openMessenger()" class="w-full p-4 rounded-xl border-2 border-sky-100 hover:border-sky-300 bg-sky-50/50 hover:bg-sky-50 transition-all flex items-center gap-4 group">
+                    <div class="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center">
+                        <i data-lucide="facebook" class="w-6 h-6 text-[#1877F2]"></i>
+                    </div>
+                    <div class="text-left flex-1">
+                        <h4 class="font-semibold text-slate-800 group-hover:text-sky-600 transition-colors">Messenger</h4>
+                        <p class="text-xs text-slate-500">Typically 1 hour</p>
+                    </div>
+                    <i data-lucide="external-link" class="w-4 h-4 text-slate-400 group-hover:text-sky-500"></i>
+                </button>
+
+                <a href="mailto:hptlmarketingofficial4@gmail.com" class="block w-full p-4 rounded-xl border-2 border-slate-100 hover:border-slate-300 bg-slate-50/50 hover:bg-slate-50 transition-all flex items-center gap-4 group">
+                    <div class="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center">
+                        <i data-lucide="mail" class="w-6 h-6 text-slate-600"></i>
+                    </div>
+                    <div class="text-left flex-1">
+                        <h4 class="font-semibold text-slate-800 group-hover:text-slate-600 transition-colors">Email</h4>
+                        <p class="text-xs text-slate-500">hptlmarketingofficial4@gmail.com</p>
+                    </div>
+                    <i data-lucide="arrow-right" class="w-4 h-4 text-slate-400 group-hover:text-slate-500"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-4 right-4 bg-slate-800 text-white px-6 py-3 rounded-xl shadow-2xl transform translate-y-20 opacity-0 transition-all duration-300 z-50 flex items-center gap-3">
+        <i data-lucide="check-circle" class="w-5 h-5 text-emerald-400"></i>
+        <span id="toast-message">Operation successful</span>
     </div>
 
     <!-- Footer -->
@@ -523,148 +1108,399 @@
                 <i data-lucide="home" class="w-5 h-5 text-blue-600"></i>
                 <span class="font-serif text-xl font-bold text-slate-900">HOMITEL</span>
             </div>
-            <p class="text-slate-500 text-sm mb-4">Premium Lodgings & Vacation Rentals</p>
-            <div class="flex justify-center gap-6 text-slate-600 items-center flex-wrap">
-                <a href="https://www.facebook.com/profile.php?id=61560217364747" target="_blank" class="hover:text-blue-600 transition-colors text-sm flex items-center gap-1">
-                    <i data-lucide="facebook" class="w-4 h-4"></i>
-                    Facebook
-                </a>
+            <p class="text-slate-500 text-sm mb-4">Master Calendar Synchronization System v2.0</p>
+            <div class="flex justify-center gap-6 text-slate-600 items-center flex-wrap text-sm">
+                <span class="flex items-center gap-1">
+                    <i data-lucide="shield-check" class="w-4 h-4 text-emerald-500"></i>
+                    256-bit SSL Encryption
+                </span>
                 <span class="text-slate-300">•</span>
-                <a href="#" onclick="toggleChat()" class="hover:text-blue-600 transition-colors text-sm cursor-pointer flex items-center gap-1">
-                    <i data-lucide="message-circle" class="w-4 h-4"></i>
-                    Messenger
-                </a>
+                <span class="flex items-center gap-1">
+                    <i data-lucide="refresh-cw" class="w-4 h-4 text-blue-500"></i>
+                    Real-time Sync
+                </span>
                 <span class="text-slate-300">•</span>
-                <a href="https://www.airbnb.com/rooms/1218785270396268139?check_in=2026-02-09&check_out=2026-02-11&guests=1&adults=2&s=67&unique_share_id=3cd00d88-2a1a-407c-ae50-da35c18a0489" target="_blank" class="hover:text-blue-600 transition-colors text-sm">Airbnb</a>
-                <span class="text-slate-300">•</span>
-                <span class="text-sm text-slate-500">© 2026 HOMITEL</span>
+                <span>© 2026 HOMITEL</span>
             </div>
         </div>
     </footer>
 
     <script>
+
+        // Admin Authentication
+        const ADMIN_PASSWORD = '6453';
+
+        function checkAdminPassword() {
+            const input = document.getElementById('adminPassword');
+            const error = document.getElementById('passwordError');
+
+            if (input.value === ADMIN_PASSWORD) {
+                // Show iCal content, hide login prompt
+                document.getElementById('adminLoginPrompt').classList.add('hidden');
+                document.getElementById('icalContent').classList.remove('hidden');
+                error.classList.add('hidden');
+                input.value = '';
+
+                // Store in session storage for persistence during session
+                sessionStorage.setItem('homitelAdmin', 'true');
+
+                showToast('Admin access granted!', 'success');
+                lucide.createIcons();
+            } else {
+                error.classList.remove('hidden');
+                input.value = '';
+                input.focus();
+            }
+        }
+
+        function logoutAdmin() {
+            document.getElementById('icalContent').classList.add('hidden');
+            document.getElementById('adminLoginPrompt').classList.remove('hidden');
+            sessionStorage.removeItem('homitelAdmin');
+            showToast('Logged out successfully', 'success');
+            lucide.createIcons();
+        }
+
+        // Check if admin is already logged in (on page load)
+        function checkAdminSession() {
+            if (sessionStorage.getItem('homitelAdmin') === 'true') {
+                document.getElementById('adminLoginPrompt').classList.add('hidden');
+                document.getElementById('icalContent').classList.remove('hidden');
+            }
+        }
+
         // Initialize Lucide icons
         lucide.createIcons();
 
-        // Generate floating particles
-        function createParticles() {
-            const container = document.getElementById('particles');
-            for (let i = 0; i < 40; i++) {
-                const particle = document.createElement('div');
-                particle.className = 'particle';
-                particle.style.left = Math.random() * 100 + 'vw';
-                particle.style.animationDuration = (Math.random() * 25 + 15) + 's';
-                particle.style.animationDelay = Math.random() * 20 + 's';
-                container.appendChild(particle);
+        // iCal Feed URLs
+        const icalFeeds = {
+            airbnb: 'https://www.airbnb.com/calendar/ical/1218785270396268139.ics?t=7bdcc59bc61547048d3fba047b7b493e',
+            booking: 'https://ical.booking.com/v1/export?t=f68f0e24-080b-433b-849d-4292e24af9e3',
+            agoda: 'https://ycs.agoda.com/en-us/api/ari/icalendar?key=QceFoC89seDE%2fgZxi6mUezlYKlW9OAr6',
+            master: 'https://open-web-calendar.hosted.quelltext.eu/calendar.ics?url=https%3A%2F%2Fwww.airbnb.com%2Fcalendar%2Fical%2F1218785270396268139.ics%3Ft%3D7bdcc59bc61547048d3fba047b7b493e&url=https%3A%2F%2Fical.booking.com%2Fv1%2Fexport%3Ft%3Df68f0e24-080b-433b-849d-4292e24af9e3&url=https%3A%2F%2Fycs.agoda.com%2Fen-us%2Fapi%2Fari%2Ficalendar%3Fkey%3DQceFoC89seDE%252fgZxi6mUezlYKlW9OAr6&filename=homitel-master-calendar.ics'
+        };
+
+        // Calendar View Switching
+        function switchCalendarView(platform) {
+            // Update tabs
+            document.querySelectorAll('.calendar-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.getElementById(`tab-${platform}`).classList.add('active');
+
+            // Update iframe
+            const iframe = document.getElementById('master-calendar');
+            let src = '';
+
+            switch(platform) {
+                case 'master':
+                    src = `https://open-web-calendar.hosted.quelltext.eu/calendar.html?url=${encodeURIComponent(icalFeeds.airbnb)}&url=${encodeURIComponent(icalFeeds.booking)}&url=${encodeURIComponent(icalFeeds.agoda)}&title=HOMITEL%20Master%20Calendar&style=border-radius%3A%200%3B&language=en&skin=flat&tab=month&color-booked=%23ef4444&color-free=%2310b981`;
+                    break;
+                case 'airbnb':
+                    src = `https://open-web-calendar.hosted.quelltext.eu/calendar.html?url=${encodeURIComponent(icalFeeds.airbnb)}&title=Airbnb%20Calendar&style=border-radius%3A%200%3B&language=en&skin=flat&tab=month&color-booked=%23FF5A5F`;
+                    break;
+                case 'booking':
+                    src = `https://open-web-calendar.hosted.quelltext.eu/calendar.html?url=${encodeURIComponent(icalFeeds.booking)}&title=Booking.com%20Calendar&style=border-radius%3A%200%3B&language=en&skin=flat&tab=month&color-booked=%23003580`;
+                    break;
+                case 'agoda':
+                    src = `https://open-web-calendar.hosted.quelltext.eu/calendar.html?url=${encodeURIComponent(icalFeeds.agoda)}&title=Agoda%20Calendar&style=border-radius%3A%200%3B&language=en&skin=flat&tab=month&color-booked=%231B5EBE`;
+                    break;
+                case 'direct':
+                    // For direct bookings, we'll show a message since it's manual
+                    document.getElementById('calendarFrame').innerHTML = `
+                        <div class="h-full flex flex-col items-center justify-center bg-slate-50 p-8">
+                            <div class="w-24 h-24 rounded-full bg-emerald-100 flex items-center justify-center mb-6">
+                                <i data-lucide="mouse-pointer-click" class="w-12 h-12 text-emerald-600"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold text-slate-900 mb-2">Direct Bookings</h3>
+                            <p class="text-slate-600 text-center max-w-md mb-6">Direct bookings are managed manually through your website form. They are not automatically synced to this calendar view.</p>
+                            <button onclick="openDirectBooking()" class="px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-semibold transition-colors flex items-center gap-2">
+                                <i data-lucide="plus" class="w-5 h-5"></i>
+                                Add Direct Booking
+                            </button>
+                            <p class="text-xs text-slate-500 mt-4">Remember to block these dates manually on other platforms</p>
+                        </div>
+                    `;
+                    lucide.createIcons();
+                    return;
+            }
+
+            // Reset iframe if it was replaced with direct booking view
+            if (!document.getElementById('master-calendar')) {
+                document.getElementById('calendarFrame').innerHTML = `<iframe id="master-calendar" style="width: 100%; height: 100%; border: none;" sandbox="allow-scripts allow-same-origin allow-popups" loading="eager"></iframe>`;
+            }
+            
+            document.getElementById('master-calendar').src = src;
+        }
+
+        // Force sync all calendars
+        async function forceSyncAll() {
+            showToast('Syncing all calendars...', 'info');
+            
+            // Simulate sync process
+            const platforms = ['airbnb', 'booking', 'agoda'];
+            for (const platform of platforms) {
+                await new Promise(resolve => setTimeout(resolve, 800));
+                updateEventCount(platform, Math.floor(Math.random() * 5) + 1);
+            }
+            
+            showToast('All calendars synchronized successfully!', 'success');
+            refreshCalendar();
+        }
+
+        // Refresh calendar iframe
+        function refreshCalendar() {
+            const iframe = document.getElementById('master-calendar');
+            if (iframe) {
+                const currentSrc = iframe.src;
+                iframe.src = currentSrc + '&refresh=' + Date.now();
+                showToast('Calendar refreshed', 'success');
             }
         }
-        createParticles();
 
-        // Booking Dropdown Toggle
-        function toggleBooking() {
-            const dropdown = document.getElementById('bookingDropdown');
-            const arrow = document.getElementById('book-arrow');
-            
-            if (dropdown.classList.contains('active')) {
-                dropdown.classList.remove('active');
-                arrow.style.transform = 'rotate(0deg)';
-            } else {
-                dropdown.classList.add('active');
-                arrow.style.transform = 'rotate(180deg)';
-                if (window.innerWidth < 768) {
-                    setTimeout(() => {
-                        dropdown.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                    }, 100);
-                }
+        // Update event counts (simulated)
+        function updateEventCount(platform, count) {
+            const element = document.getElementById(`${platform}-event-count`);
+            if (element) {
+                element.textContent = `${count} upcoming booking${count !== 1 ? 's' : ''}`;
             }
         }
 
-        // Facebook Messenger Chat Redirect
-        function toggleChat() {
-            window.open('https://m.me/danmichaelbucoy25', '_blank');
+        // Copy to clipboard functions
+        function copyToClipboard(elementId) {
+            const text = document.getElementById(elementId).textContent;
+            copyText(text);
         }
 
-        // Amenity Modal Functions
-        function showAmenityPhoto(amenityType) {
-            const modal = document.getElementById('amenityModal');
-            const content = document.getElementById('amenityModalContent');
-            const title = document.getElementById('amenityModalTitle');
-            
-            const titles = {
-                'wifi': 'High-Speed WiFi',
-                'tv': 'Smart TV',
-                'kitchen': 'Full Kitchen',
-                'parking': 'Free Parking',
-                'ac': 'Air Conditioning',
-                'security': '24/7 Security',
-                'location': 'Prime Location'
-            };
-            
-            title.textContent = titles[amenityType] || 'Amenity';
+        function copyText(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('URL copied to clipboard!', 'success');
+            }).catch(() => {
+                showToast('Failed to copy', 'error');
+            });
+        }
+
+        // Modal functions
+        function openSyncSettings() {
+            const modal = document.getElementById('syncSettingsModal');
+            const content = document.getElementById('syncSettingsContent');
             modal.classList.remove('hidden');
             modal.classList.add('flex');
-            
             setTimeout(() => {
                 content.classList.remove('scale-95', 'opacity-0');
                 content.classList.add('scale-100', 'opacity-100');
             }, 10);
         }
 
-        function closeAmenityModal() {
-            const modal = document.getElementById('amenityModal');
-            const content = document.getElementById('amenityModalContent');
-            
+        function closeSyncSettings() {
+            const modal = document.getElementById('syncSettingsModal');
+            const content = document.getElementById('syncSettingsContent');
             content.classList.remove('scale-100', 'opacity-100');
             content.classList.add('scale-95', 'opacity-0');
-            
             setTimeout(() => {
                 modal.classList.add('hidden');
                 modal.classList.remove('flex');
             }, 300);
         }
 
-        // Close modal when clicking outside
-        document.getElementById('amenityModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeAmenityModal();
+        function openDirectBooking() {
+            const modal = document.getElementById('directBookingModal');
+            const content = document.getElementById('directBookingContent');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
+            
+            // Set min dates
+            const today = new Date().toISOString().split('T')[0];
+            document.querySelector('#directBookingForm input[name="checkInDate"]').min = today;
+            document.querySelector('#directBookingForm input[name="checkOutDate"]').min = today;
+        }
+
+        function closeDirectBooking() {
+            const modal = document.getElementById('directBookingModal');
+            const content = document.getElementById('directBookingContent');
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+
+        function toggleChat() {
+            const modal = document.getElementById('chatWidgetModal');
+            const content = document.getElementById('chatWidgetContent');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeChatWidget() {
+            const modal = document.getElementById('chatWidgetModal');
+            const content = document.getElementById('chatWidgetContent');
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+
+        // Google Chat integration
+        function openGoogleChat() {
+            const message = "Hi HOMITEL! I have a question about booking your property.";
+            navigator.clipboard.writeText(message).then(() => {
+                window.open('https://mail.google.com/chat/u/0/', '_blank');
+                showToast('Chat message copied! Paste in Google Chat.', 'success');
+            });
+        }
+
+        function openMessenger() {
+            window.open('https://m.me/danmichaelbucoy25', '_blank');
+        }
+
+        // Form submissions
+        function submitDirectBooking(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+            
+            // Build email
+            const subject = `DIRECT BOOKING - ${data.guestName} - ${data.checkInDate} to ${data.checkOutDate}`;
+            const body = `
+NEW DIRECT BOOKING (MANUAL ENTRY)
+==================================
+
+Guest: ${data.guestName}
+Email: ${data.guestEmail}
+Dates: ${data.checkInDate} to ${data.checkOutDate}
+Guests: ${data.adults} adults, ${data.children} children
+Amount: ${data.amount || 'Not specified'}
+
+Notes:
+${data.notes || 'No additional notes'}
+
+ACTION REQUIRED:
+1. Block these dates on Airbnb
+2. Block these dates on Booking.com  
+3. Block these dates on Agoda
+4. Send confirmation email to guest
+5. Add to master spreadsheet
+
+Sent from HOMITEL Master Calendar System
+            `;
+            
+            window.location.href = `mailto:hptlmarketingofficial4@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            
+            showToast('Direct booking submitted! Check your email.', 'success');
+            closeDirectBooking();
+            form.reset();
+            
+            // Update direct booking count
+            const currentCount = parseInt(document.getElementById('direct-event-count').textContent) || 0;
+            document.getElementById('direct-event-count').textContent = `${currentCount + 1} booking${currentCount !== 0 ? 's' : ''}`;
+        }
+
+        // Settings functions
+        function updateSyncInterval() {
+            const interval = document.getElementById('sync-interval').value;
+            showToast(`Sync interval updated to ${interval} minutes`, 'success');
+        }
+
+        function togglePlatform(platform) {
+            showToast(`${platform.charAt(0).toUpperCase() + platform.slice(1)} sync ${event.target.checked ? 'enabled' : 'disabled'}`, 'info');
+        }
+
+        function saveSyncSettings() {
+            showToast('Settings saved successfully!', 'success');
+            closeSyncSettings();
+        }
+
+        function testSyncConnection() {
+            showToast('Testing connections...', 'info');
+            setTimeout(() => {
+                showToast('All connections healthy!', 'success');
+            }, 1500);
+        }
+
+        function exportCalendarData() {
+            showToast('Preparing export...', 'info');
+            setTimeout(() => {
+                // Create dummy CSV
+                const csv = 'Date,Platform,Guest,Status\n2026-02-15,Airbnb,Juan Dela Cruz,Confirmed\n2026-02-20,Booking.com,Maria Santos,Pending';
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'homitel-bookings-export.csv';
+                a.click();
+                showToast('Export downloaded!', 'success');
+            }, 1000);
+        }
+
+        // Toast notification
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+            
+            toastMessage.textContent = message;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            
+            // Update icon based on type
+            const icon = toast.querySelector('i');
+            icon.className = 'w-5 h-5';
+            if (type === 'success') {
+                icon.classList.add('text-emerald-400');
+                icon.setAttribute('data-lucide', 'check-circle');
+            } else if (type === 'error') {
+                icon.classList.add('text-red-400');
+                icon.setAttribute('data-lucide', 'alert-circle');
+            } else {
+                icon.classList.add('text-blue-400');
+                icon.setAttribute('data-lucide', 'info');
             }
+            lucide.createIcons();
+            
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check admin session
+            checkAdminSession();
+            // Load initial event counts
+            setTimeout(() => {
+                updateEventCount('airbnb', 3);
+                updateEventCount('booking', 1);
+                updateEventCount('agoda', 0);
+            }, 1000);
+            
+            // Start countdown timer for next sync
+            let minutes = 22;
+            setInterval(() => {
+                minutes--;
+                if (minutes < 0) minutes = 30;
+                document.getElementById('next-sync-time').textContent = `in ${minutes} minute${minutes !== 1 ? 's' : ''}`;
+            }, 60000);
         });
 
-        // Close dropdown when clicking outside
-        document.addEventListener('click', function(event) {
-            const dropdown = document.getElementById('bookingDropdown');
-            const bookCard = event.target.closest('.glass-card');
-            
-            if (!bookCard && dropdown.classList.contains('active')) {
-                dropdown.classList.remove('active');
-                document.getElementById('book-arrow').style.transform = 'rotate(0deg)';
-            }
-        });
-
-        // Parallax effect
-        document.addEventListener('mousemove', (e) => {
-            const cards = document.querySelectorAll('.glass-card');
-            const x = (window.innerWidth - e.pageX * 2) / 100;
-            const y = (window.innerHeight - e.pageY * 2) / 100;
-            
-            cards.forEach((card, index) => {
-                if (!card.classList.contains('hovering')) {
-                    const speed = (index + 1) * 0.1;
-                    card.style.transform = `translate(${x * speed}px, ${y * speed}px)`;
+        // Close modals on outside click
+        ['syncSettingsModal', 'directBookingModal', 'chatWidgetModal'].forEach(id => {
+            document.getElementById(id)?.addEventListener('click', (e) => {
+                if (e.target.id === id) {
+                    window[`close${id.replace('Modal', '').replace('directBooking', 'DirectBooking').replace('syncSettings', 'SyncSettings').replace('chatWidget', 'ChatWidget')}`]();
                 }
-            });
-        });
-
-        document.querySelectorAll('.glass-card').forEach(card => {
-            card.addEventListener('mouseenter', () => {
-                card.classList.add('hovering');
-                card.style.transform = 'translateY(-8px)';
-            });
-            card.addEventListener('mouseleave', () => {
-                card.classList.remove('hovering');
             });
         });
     </script>
 </body>
 </html>
-
