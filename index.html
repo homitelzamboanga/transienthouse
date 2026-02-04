@@ -281,6 +281,7 @@
         }
     </style>
 <base target="_blank">
+<base target="_blank">
 </head>
 <body class="text-slate-800 min-h-screen flex flex-col">
 
@@ -506,68 +507,102 @@
             </div>
         </div>
 
-        <!-- iCal Integration URLs Section -->
-        <div class="w-full max-w-6xl px-4 mb-16">
-            <div class="glass-card rounded-3xl p-8 relative overflow-hidden">
+        <!-- iCal Integration URLs Section - Admin Only -->
+        <div id="icalSection" class="w-full max-w-6xl px-4 mb-16">
+            <!-- Admin Login Prompt (shown by default) -->
+            <div id="adminLoginPrompt" class="glass-card rounded-3xl p-8 relative overflow-hidden">
                 <div class="absolute top-0 right-0 w-64 h-64 bg-blue-400/5 rounded-full -translate-y-1/2 translate-x-1/2"></div>
-                
-                <div class="relative z-10">
-                    <div class="flex items-center gap-3 mb-6">
-                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center shadow-lg">
-                            <i data-lucide="link" class="w-6 h-6 text-white"></i>
-                        </div>
-                        <div>
-                            <h2 class="font-serif text-2xl font-bold text-slate-900">iCal Integration URLs</h2>
-                            <p class="text-blue-600 text-sm">Use these to sync your website with other platforms</p>
-                        </div>
+
+                <div class="relative z-10 text-center max-w-md mx-auto">
+                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-slate-500 to-slate-600 flex items-center justify-center mx-auto mb-4 shadow-lg">
+                        <i data-lucide="lock" class="w-8 h-8 text-white"></i>
                     </div>
+                    <h2 class="font-serif text-2xl font-bold text-slate-900 mb-2">Admin Access Required</h2>
+                    <p class="text-slate-500 text-sm mb-6">The iCal Integration URLs are restricted to administrators only.</p>
 
-                    <div class="grid md:grid-cols-2 gap-6">
-                        <!-- Master iCal URL -->
-                        <div class="space-y-2">
-                            <div class="flex items-center justify-between">
-                                <h3 class="font-semibold text-slate-800 text-sm">Master Calendar (All Platforms)</h3>
-                                <span class="platform-badge direct text-xs">Recommended</span>
+                    <div class="space-y-3">
+                        <input type="password" id="adminPassword" placeholder="Enter admin password" 
+                            class="form-input w-full px-4 py-3 rounded-xl bg-slate-50 text-sm text-center"
+                            onkeypress="if(event.key==='Enter')checkAdminPassword()">
+                        <button onclick="checkAdminPassword()" 
+                            class="w-full py-3 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-600 text-white font-semibold shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-all flex items-center justify-center gap-2">
+                            <i data-lucide="unlock" class="w-5 h-5"></i>
+                            <span>Unlock</span>
+                        </button>
+                        <p id="passwordError" class="text-xs text-red-500 hidden">Incorrect password. Please try again.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- iCal Content (hidden by default, shown after auth) -->
+            <div id="icalContent" class="hidden">
+                <div class="glass-card rounded-3xl p-8 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-64 h-64 bg-blue-400/5 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+
+                    <div class="relative z-10">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center shadow-lg">
+                                    <i data-lucide="link" class="w-6 h-6 text-white"></i>
+                                </div>
+                                <div>
+                                    <h2 class="font-serif text-2xl font-bold text-slate-900">iCal Integration URLs</h2>
+                                    <p class="text-blue-600 text-sm">Use these to sync your website with other platforms</p>
+                                </div>
                             </div>
-                            <div class="ical-url-box">
-                                <button class="copy-btn" onclick="copyToClipboard('master-ical-url')">Copy</button>
-                                <div id="master-ical-url">https://open-web-calendar.hosted.quelltext.eu/calendar.ics?url=https%3A%2F%2Fwww.airbnb.com%2Fcalendar%2Fical%2F1218785270396268139.ics%3Ft%3D7bdcc59bc61547048d3fba047b7b493e&url=https%3A%2F%2Fical.booking.com%2Fv1%2Fexport%3Ft%3Df68f0e24-080b-433b-849d-4292e24af9e3&url=https%3A%2F%2Fycs.agoda.com%2Fen-us%2Fapi%2Fari%2Ficalendar%3Fkey%3DQceFoC89seDE%252fgZxi6mUezlYKlW9OAr6&filename=homitel-master-calendar.ics</div>
-                            </div>
-                            <p class="text-xs text-slate-500">Import this into any calendar app to see all bookings from all platforms combined.</p>
+                            <button onclick="logoutAdmin()" class="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-medium transition-colors flex items-center gap-2">
+                                <i data-lucide="log-out" class="w-4 h-4"></i>
+                                Logout
+                            </button>
                         </div>
 
-                        <!-- Individual URLs -->
-                        <div class="space-y-3">
-                            <h3 class="font-semibold text-slate-800 text-sm">Individual Platform URLs</h3>
-                            
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <!-- Master iCal URL -->
                             <div class="space-y-2">
-                                <div class="flex items-center gap-2 p-3 bg-red-50 rounded-lg border border-red-100">
-                                    <i data-lucide="home" class="w-4 h-4 text-[#FF5A5F]"></i>
-                                    <span class="text-xs font-medium text-red-800 flex-1">Airbnb iCal</span>
-                                    <button onclick="copyText('https://www.airbnb.com/calendar/ical/1218785270396268139.ics?t=7bdcc59bc61547048d3fba047b7b493e')" class="text-xs text-red-600 hover:text-red-700 font-medium">Copy</button>
+                                <div class="flex items-center justify-between">
+                                    <h3 class="font-semibold text-slate-800 text-sm">Master Calendar (All Platforms)</h3>
+                                    <span class="platform-badge direct text-xs">Recommended</span>
                                 </div>
-                                
-                                <div class="flex items-center gap-2 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                                    <i data-lucide="bed" class="w-4 h-4 text-[#003580]"></i>
-                                    <span class="text-xs font-medium text-blue-800 flex-1">Booking.com iCal</span>
-                                    <button onclick="copyText('https://ical.booking.com/v1/export?t=f68f0e24-080b-433b-849d-4292e24af9e3')" class="text-xs text-blue-600 hover:text-blue-700 font-medium">Copy</button>
+                                <div class="ical-url-box">
+                                    <button class="copy-btn" onclick="copyToClipboard('master-ical-url')">Copy</button>
+                                    <div id="master-ical-url">https://open-web-calendar.hosted.quelltext.eu/calendar.ics?url=https%3A%2F%2Fwww.airbnb.com%2Fcalendar%2Fical%2F1218785270396268139.ics%3Ft%3D7bdcc59bc61547048d3fba047b7b493e&url=https%3A%2F%2Fical.booking.com%2Fv1%2Fexport%3Ft%3Df68f0e24-080b-433b-849d-4292e24af9e3&url=https%3A%2F%2Fycs.agoda.com%2Fen-us%2Fapi%2Fari%2Ficalendar%3Fkey%3DQceFoC89seDE%252fgZxi6mUezlYKlW9OAr6&filename=homitel-master-calendar.ics</div>
                                 </div>
-                                
-                                <div class="flex items-center gap-2 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                                    <i data-lucide="building" class="w-4 h-4 text-[#1B5EBE]"></i>
-                                    <span class="text-xs font-medium text-blue-800 flex-1">Agoda iCal</span>
-                                    <button onclick="copyText('https://ycs.agoda.com/en-us/api/ari/icalendar?key=QceFoC89seDE%2fgZxi6mUezlYKlW9OAr6')" class="text-xs text-blue-600 hover:text-blue-700 font-medium">Copy</button>
+                                <p class="text-xs text-slate-500">Import this into any calendar app to see all bookings from all platforms combined.</p>
+                            </div>
+
+                            <!-- Individual URLs -->
+                            <div class="space-y-3">
+                                <h3 class="font-semibold text-slate-800 text-sm">Individual Platform URLs</h3>
+
+                                <div class="space-y-2">
+                                    <div class="flex items-center gap-2 p-3 bg-red-50 rounded-lg border border-red-100">
+                                        <i data-lucide="home" class="w-4 h-4 text-[#FF5A5F]"></i>
+                                        <span class="text-xs font-medium text-red-800 flex-1">Airbnb iCal</span>
+                                        <button onclick="copyText('https://www.airbnb.com/calendar/ical/1218785270396268139.ics?t=7bdcc59bc61547048d3fba047b7b493e')" class="text-xs text-red-600 hover:text-red-700 font-medium">Copy</button>
+                                    </div>
+
+                                    <div class="flex items-center gap-2 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                                        <i data-lucide="bed" class="w-4 h-4 text-[#003580]"></i>
+                                        <span class="text-xs font-medium text-blue-800 flex-1">Booking.com iCal</span>
+                                        <button onclick="copyText('https://ical.booking.com/v1/export?t=f68f0e24-080b-433b-849d-4292e24af9e3')" class="text-xs text-blue-600 hover:text-blue-700 font-medium">Copy</button>
+                                    </div>
+
+                                    <div class="flex items-center gap-2 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                                        <i data-lucide="building" class="w-4 h-4 text-[#1B5EBE]"></i>
+                                        <span class="text-xs font-medium text-blue-800 flex-1">Agoda iCal</span>
+                                        <button onclick="copyText('https://ycs.agoda.com/en-us/api/ari/icalendar?key=QceFoC89seDE%2fgZxi6mUezlYKlW9OAr6')" class="text-xs text-blue-600 hover:text-blue-700 font-medium">Copy</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                        <div class="flex items-start gap-3">
-                            <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5"></i>
-                            <div class="text-sm text-amber-800">
-                                <p class="font-semibold mb-1">Important: One-Way Sync Only</p>
-                                <p class="text-xs leading-relaxed">The current setup is <strong>read-only aggregation</strong>. To enable two-way sync (where your website blocks dates on other platforms automatically), you need a Channel Manager like <a href="https://www.hostaway.com" target="_blank" class="underline hover:text-amber-900">Hostaway</a> or <a href="https://www.lodgify.com" target="_blank" class="underline hover:text-amber-900">Lodgify</a> with API connections.</p>
+                        <div class="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                            <div class="flex items-start gap-3">
+                                <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5"></i>
+                                <div class="text-sm text-amber-800">
+                                    <p class="font-semibold mb-1">Important: One-Way Sync Only</p>
+                                    <p class="text-xs leading-relaxed">The current setup is <strong>read-only aggregation</strong>. To enable two-way sync (where your website blocks dates on other platforms automatically), you need a Channel Manager like <a href="https://www.hostaway.com" target="_blank" class="underline hover:text-amber-900">Hostaway</a> or <a href="https://www.lodgify.com" target="_blank" class="underline hover:text-amber-900">Lodgify</a> with API connections.</p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -898,6 +933,49 @@
     </footer>
 
     <script>
+
+        // Admin Authentication
+        const ADMIN_PASSWORD = '6453';
+
+        function checkAdminPassword() {
+            const input = document.getElementById('adminPassword');
+            const error = document.getElementById('passwordError');
+
+            if (input.value === ADMIN_PASSWORD) {
+                // Show iCal content, hide login prompt
+                document.getElementById('adminLoginPrompt').classList.add('hidden');
+                document.getElementById('icalContent').classList.remove('hidden');
+                error.classList.add('hidden');
+                input.value = '';
+
+                // Store in session storage for persistence during session
+                sessionStorage.setItem('homitelAdmin', 'true');
+
+                showToast('Admin access granted!', 'success');
+                lucide.createIcons();
+            } else {
+                error.classList.remove('hidden');
+                input.value = '';
+                input.focus();
+            }
+        }
+
+        function logoutAdmin() {
+            document.getElementById('icalContent').classList.add('hidden');
+            document.getElementById('adminLoginPrompt').classList.remove('hidden');
+            sessionStorage.removeItem('homitelAdmin');
+            showToast('Logged out successfully', 'success');
+            lucide.createIcons();
+        }
+
+        // Check if admin is already logged in (on page load)
+        function checkAdminSession() {
+            if (sessionStorage.getItem('homitelAdmin') === 'true') {
+                document.getElementById('adminLoginPrompt').classList.add('hidden');
+                document.getElementById('icalContent').classList.remove('hidden');
+            }
+        }
+
         // Initialize Lucide icons
         lucide.createIcons();
 
@@ -1204,6 +1282,8 @@ Sent from HOMITEL Master Calendar System
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
+            // Check admin session
+            checkAdminSession();
             // Load initial event counts
             setTimeout(() => {
                 updateEventCount('airbnb', 3);
